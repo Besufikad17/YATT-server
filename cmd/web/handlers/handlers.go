@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 )
 
 type Handler struct {
+	Ctx    context.Context
 	DBConn *pgxpool.Pool
 }
 
@@ -27,8 +29,9 @@ func (h *Handler) Ping(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	w.Write(data)
 }
 
-func NewHandler(dbConn *pgxpool.Pool) *Handler {
+func NewHandler(ctx context.Context, dbConn *pgxpool.Pool) *Handler {
 	return &Handler{
+		Ctx:    ctx,
 		DBConn: dbConn,
 	}
 }

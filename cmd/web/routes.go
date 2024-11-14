@@ -9,9 +9,12 @@ import (
 
 func (app *Application) routes() http.Handler {
 	router := httprouter.New()
-	handlers := handlers.NewHandler(app.DBConn)
+	handlers := handlers.NewHandler(app.Ctx, app.DBConn)
 
 	router.GET("/", handlers.Ping)
+
+	// auth routes
+	router.POST("/auth/signup", handlers.Signup)
 
 	return router
 }
