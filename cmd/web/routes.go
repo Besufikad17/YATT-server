@@ -14,6 +14,7 @@ func (app *Application) routes() http.Handler {
 	router.GET("/", handlers.Ping)
 
 	// auth routes
+	router.POST("/auth/login", handlers.Login)
 	router.POST("/auth/signup", handlers.Signup)
 
 	return router

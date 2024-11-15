@@ -11,6 +11,50 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+
+	reqBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		internal.ThrowHttpError(w, err, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+
+	var actionPayload internal.LoginParams
+	err = json.Unmarshal(reqBody, &actionPayload)
+	if err != nil {
+		internal.ThrowHttpError(w, err, http.StatusInternalServerError, "Error unmarshalling payload")
+		return
+	}
+
+	if err := internal.Validate.Struct(actionPayload); err != nil {
+		internal.ThrowHttpError(w, err, http.StatusBadRequest, "Validation error: "+err.Error())
+		return
+	}
+
+	queries := db.New(h.DBConn)
+	user, err := queries.GetUserByEmail(h.Ctx, actionPayload.Email)
+	if err != nil {
+		internal.ThrowHttpError(w, err, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	valid := internal.Compare(user.Password, actionPayload.Password)
+	if valid {
+		token, err := internal.CreateToken(user, actionPayload.RememberMe)
+		if err != nil {
+			internal.ThrowHttpError(w, err, http.StatusInternalServerError, "Error creating token"+err.Error())
+			return
+		}
+		w.Write(internal.Marshall(nil, map[string]interface{}{
+			"token": token,
+		}, true))
+	} else {
+		internal.ThrowHttpError(w, err, http.StatusInternalServerError, "Invalid credentails")
+		return
+	}
+}
+
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 
